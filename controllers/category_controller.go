@@ -198,3 +198,99 @@ func GetCategoryByID(c *gin.Context) {
 		DataBudget:   budget,
 	})
 }
+
+func UpdateCategory(c *gin.Context) {
+	categoryID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Required Param",
+			"message": err.Error(),
+		})
+	}
+
+	var req CategoryRequest
+
+	// Validasi dan bind request body
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Validation failed",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	req.Name = strings.ToLower(req.Name)
+
+	now := time.Now()
+
+	var existingCategory models.Category
+	result := database.DB.First(&existingCategory, categoryID)
+
+	if result.Error == nil {
+		req.CategoryID = existingCategory.ID
+	} else {
+		newCategory := models.Category{
+			UserID:    req.UserID,
+			Name:      req.Name,
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		if err := database.DB.Create(&newCategory).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Category creation failed",
+				"message": err,
+			})
+			return
+		}
+	}
+
+	newBudget := models.Budget{
+		UserID:     req.UserID,
+		CategoryID: req.CategoryID,
+		Month:      req.Month,
+		Year:       req.Year,
+		Amount:     req.Amount,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
+
+	if err := database.DB.Create(&newBudget).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Budget creation failed",
+			"message": err,
+		})
+	}
+
+	// Success response
+	c.JSON(http.StatusCreated, CategoryDefaultResponse{
+		Error:   false,
+		Message: "Category & Budget successfully updated",
+	})
+}
+
+func DeleteCategoryByID(c *gin.Context) {
+	categoryID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "Unauthorized",
+			"message": "Invalid Category ID!",
+		})
+		return
+	}
+
+	if err := database.DB.Delete(&models.Category{}, categoryID).Error; err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"error":   "Failed",
+			"message": "Unable to delete category!",
+		})
+		return
+	}
+
+	// Success response
+	c.JSON(http.StatusCreated, CategoryDefaultResponse{
+		Error:   false,
+		Message: "Category deletion successful",
+	})
+}

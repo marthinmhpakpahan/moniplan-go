@@ -33,6 +33,15 @@ func SetupRoutes(router *gin.Engine) {
 			protected.GET("/category", controllers.IndexCategory)
 			protected.POST("/category/create", controllers.CreateCategory)
 			protected.GET("/category/:id", controllers.GetCategoryByID)
+			protected.POST("/category/update/:id", controllers.UpdateCategory)
+			protected.GET("/category/delete/:id", controllers.DeleteCategoryByID)
+
+			// Transaction routes
+			protected.GET("/transaction", controllers.IndexTransaction)
+			protected.POST("/transaction/create", controllers.CreateTransaction)
+			protected.GET("/transaction/:id", controllers.GetTransactionByID)
+			protected.POST("/transaction/update/:id", controllers.UpdateTransaction)
+			protected.GET("/transaction/delete/:id", controllers.DeleteTransactionByID)
 		}
 	}
 
