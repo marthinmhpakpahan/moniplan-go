@@ -14,12 +14,10 @@ import (
 )
 
 type CategoryRequest struct {
-	UserID     uint   `json:"user_id" binding:"required"`
-	CategoryID uint   `json:"category_id"`
-	Name       string `json:"name" binding:"required,max=100"`
-	Month      uint   `json:"month" binding:"required"`
-	Year       uint   `json:"year" binding:"required"`
-	Amount     uint   `json:"amount" binding:"required"`
+	Name   string `json:"name" binding:"required,max=100"`
+	Month  uint   `json:"month" binding:"required"`
+	Year   uint   `json:"year" binding:"required"`
+	Amount uint   `json:"amount" binding:"required"`
 }
 
 type CategoryDefaultResponse struct {
@@ -79,6 +77,15 @@ func IndexCategory(c *gin.Context) {
 func CreateCategory(c *gin.Context) {
 	var req CategoryRequest
 
+	userID, exists := middlewares.GetUserIDFromContext(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "Unauthorized",
+			"message": "User ID not found in context",
+		})
+		return
+	}
+
 	// Validasi dan bind request body
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -94,14 +101,14 @@ func CreateCategory(c *gin.Context) {
 
 	// Cek apakah email sudah terdaftar
 	var existingCategory models.Category
-	result := database.DB.Where("name = ?", req.Name).Where("user_id = ?", req.UserID).First(&existingCategory)
+	result := database.DB.Where("name = ?", req.Name).Where("user_id = ?", userID).First(&existingCategory)
 
 	if result.Error == nil {
 		req.CategoryID = existingCategory.ID
 	} else {
 		// Buat user baru
 		newCategory := models.Category{
-			UserID:    req.UserID,
+			UserID:    userID,
 			Name:      req.Name,
 			CreatedAt: now,
 			UpdatedAt: now,
@@ -117,7 +124,7 @@ func CreateCategory(c *gin.Context) {
 	}
 
 	newBudget := models.Budget{
-		UserID:     req.UserID,
+		UserID:     userID,
 		CategoryID: req.CategoryID,
 		Month:      req.Month,
 		Year:       req.Year,
@@ -200,6 +207,15 @@ func GetCategoryByID(c *gin.Context) {
 }
 
 func UpdateCategory(c *gin.Context) {
+	userID, exists := middlewares.GetUserIDFromContext(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "Unauthorized",
+			"message": "User ID not found in context",
+		})
+		return
+	}
+
 	categoryID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -230,7 +246,7 @@ func UpdateCategory(c *gin.Context) {
 		req.CategoryID = existingCategory.ID
 	} else {
 		newCategory := models.Category{
-			UserID:    req.UserID,
+			UserID:    userID,
 			Name:      req.Name,
 			CreatedAt: now,
 			UpdatedAt: now,
@@ -246,7 +262,7 @@ func UpdateCategory(c *gin.Context) {
 	}
 
 	newBudget := models.Budget{
-		UserID:     req.UserID,
+		UserID:     userID,
 		CategoryID: req.CategoryID,
 		Month:      req.Month,
 		Year:       req.Year,
