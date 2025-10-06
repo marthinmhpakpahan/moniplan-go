@@ -18,7 +18,7 @@ type TransactionRequest struct {
 	CategoryID      uint   `json:"category_id"`
 	Amount          uint   `json:"amount" binding:"required"`
 	Type            string `json:"type" binding:"required,max=100"`
-	Remarks         string `json:"remarks" binding:"required,max=255"`
+	Remarks         string `json:"remarks" binding:"required"`
 	TransactionDate string `json:"transaction_date"`
 }
 
@@ -37,9 +37,9 @@ type TransactionDefaultResponse struct {
 }
 
 type TransactionIndexResponse struct {
-	Error   bool                 `json:"error"`
-	Message string               `json:"message"`
-	Data    []models.Transaction `json:"data"`
+	Error   bool                               `json:"error"`
+	Message string                             `json:"message"`
+	Data    []models.TransactionCategoryBudget `json:"data"`
 }
 
 type TransactionFetchResponse struct {
@@ -59,18 +59,34 @@ func IndexTransaction(c *gin.Context) {
 		return
 	}
 
+	now := time.Now() // current local time
+	currentYear, currentMonth, _ := now.Date()
+	current_year := currentYear
+	current_month := int(currentMonth)
+
+	param_month := c.DefaultQuery("month", strconv.Itoa(current_month))
+	param_year := c.DefaultQuery("year", strconv.Itoa(current_year))
+
 	// Fetch user data dari database
-	var transactions []models.Transaction
-	if err := database.DB.Where("user_id = ?", userID).Order("transaction_date DESC").Find(&transactions).Error; err != nil {
+	var transactions []models.TransactionCategoryBudget
+	err := database.DB.
+		Table("transactions t").
+		Select("t.id, t.user_id, t.category_id, t.amount, t.type, t.remarks, DATE_FORMAT(t.transaction_date, '%W, %d %M %Y %H:%i') AS transaction_date, t.created_at, t.updated_at, c.name as category_name").
+		Joins("JOIN categories c ON c.id = t.category_id").
+		Where("t.user_id = ? AND YEAR(t.transaction_date) = ? AND MONTH(t.transaction_date) = ?", userID, param_year, param_month).
+		Order("t.id DESC").
+		Scan(&transactions).Error
+
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
-				"error":   "User not found",
-				"message": "User account no longer exists",
+				"error":   "Transaction not found",
+				"message": "Transaction no longer exists",
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error":   "Database error",
-				"message": "Failed to fetch user profile",
+				"message": "Failed to fetch transaction",
 			})
 		}
 		return

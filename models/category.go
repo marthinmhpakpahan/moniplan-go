@@ -15,6 +15,7 @@ type Category struct {
 }
 
 type CategoryAndBudget struct {
+	ID         uint      `json:"id" gorm:"primaryKey"`
 	CategoryID uint      `json:"category_id" gorm:"primaryKey"`
 	UserID     uint      `json:"user_id" gorm:"not null"`
 	Name       string    `json:"name" gorm:"not null;size:100"`

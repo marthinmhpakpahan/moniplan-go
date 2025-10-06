@@ -14,10 +14,11 @@ import (
 )
 
 type CategoryRequest struct {
-	Name   string `json:"name" binding:"required,max=100"`
-	Month  uint   `json:"month" binding:"required"`
-	Year   uint   `json:"year" binding:"required"`
-	Amount uint   `json:"amount" binding:"required"`
+	CategoryID uint   `json:"category_id"`
+	Name       string `json:"name" binding:"required,max=100"`
+	Month      uint   `json:"month" binding:"required"`
+	Year       uint   `json:"year" binding:"required"`
+	Amount     uint   `json:"amount" binding:"required"`
 }
 
 type CategoryDefaultResponse struct {
@@ -26,9 +27,9 @@ type CategoryDefaultResponse struct {
 }
 
 type CategoryIndexResponse struct {
-	Error   bool              `json:"error"`
-	Message string            `json:"message"`
-	Data    []models.Category `json:"data"`
+	Error   bool                       `json:"error"`
+	Message string                     `json:"message"`
+	Data    []models.CategoryAndBudget `json:"data"`
 }
 
 type CategoryFetchResponse struct {
@@ -49,18 +50,40 @@ func IndexCategory(c *gin.Context) {
 		return
 	}
 
+	// now := time.Now() // current local time
+	// currentYear, currentMonth, _ := now.Date()
+	// current_year := currentYear
+	// current_month := int(currentMonth)
+
+	// param_month := c.DefaultQuery("month", strconv.Itoa(current_month))
+	// param_year := c.DefaultQuery("year", strconv.Itoa(current_year))
+
 	// Fetch user data dari database
-	var categories []models.Category
-	if err := database.DB.Where("user_id = ?", userID).Order("name ASC").Find(&categories).Error; err != nil {
+	subQuery := database.DB.
+		Table("budgets").
+		Select("category_id, MAX(id) as latest_id").
+		Group("category_id")
+
+	var categories []models.CategoryAndBudget
+	err := database.DB.
+		Table("categories c").
+		Select("c.id, b.category_id, c.user_id, c.name, b.month, b.year, b.amount").
+		Joins("JOIN budgets b ON b.category_id = c.id").
+		Joins("JOIN (?) latest ON b.category_id = latest.category_id AND b.id = latest.latest_id", subQuery).
+		Where("c.user_id = ?", userID).
+		Order("c.name ASC").
+		Scan(&categories).Error
+
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
-				"error":   "User not found",
-				"message": "User account no longer exists",
+				"error":   "Data Not found",
+				"message": "Data category and budget no longer exists",
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error":   "Database error",
-				"message": "Failed to fetch user profile",
+				"message": "Failed to fetch category data",
 			})
 		}
 		return
@@ -121,6 +144,8 @@ func CreateCategory(c *gin.Context) {
 			})
 			return
 		}
+
+		req.CategoryID = newCategory.ID
 	}
 
 	newBudget := models.Budget{
