@@ -25,7 +25,7 @@ func ConnectDatabase() {
 		log.Fatal("Database configuration is incomplete. Please check your .env file")
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", dbUser, dbPassword, dbHost, dbPort, dbName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Asia/Jakarta", dbUser, dbPassword, dbHost, dbPort, dbName)
 
 	config := &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
