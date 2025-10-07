@@ -155,7 +155,6 @@ func CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	now := time.Now()
 	_layout := "2006-01-02 15:04:05"
 	location, err := time.LoadLocation("Asia/Jakarta")
 	if err != nil {
@@ -165,8 +164,11 @@ func CreateTransaction(c *gin.Context) {
 
 	parsedTime, err := time.ParseInLocation(_layout, req.TransactionDate, location)
 	if err != nil {
-		parsedTime = now
+		fmt.Println("Error loading location:", err)
+		parsedTime = time.Now()
 	}
+
+	fmt.Println("parsedTime: ", parsedTime)
 
 	newTransaction := models.Transaction{
 		UserID:          userID,
@@ -175,8 +177,8 @@ func CreateTransaction(c *gin.Context) {
 		Type:            req.Type,
 		Remarks:         req.Remarks,
 		TransactionDate: parsedTime,
-		CreatedAt:       now,
-		UpdatedAt:       now,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
 
 	if err := database.DB.Create(&newTransaction).Error; err != nil {
