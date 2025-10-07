@@ -138,7 +138,6 @@ func GetTransactionByID(c *gin.Context) {
 func CreateTransaction(c *gin.Context) {
 	var req TransactionRequest
 
-	// Ambil user ID dari context (di-set oleh auth middleware)
 	userID, exists := middlewares.GetUserIDFromContext(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -148,7 +147,6 @@ func CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	// Validasi dan bind request body
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Validation failed",
@@ -158,10 +156,16 @@ func CreateTransaction(c *gin.Context) {
 	}
 
 	now := time.Now()
-
-	_datetime, err := time.Parse(req.TransactionDate, req.TransactionDate)
+	_layout := "2006-01-02 15:04:05"
+	location, err := time.LoadLocation("Asia/Jakarta")
 	if err != nil {
-		_datetime = now
+		fmt.Println("Error loading location:", err)
+		return
+	}
+
+	parsedTime, err := time.ParseInLocation(_layout, req.TransactionDate, location)
+	if err != nil {
+		parsedTime = now
 	}
 
 	newTransaction := models.Transaction{
@@ -170,7 +174,7 @@ func CreateTransaction(c *gin.Context) {
 		Amount:          req.Amount,
 		Type:            req.Type,
 		Remarks:         req.Remarks,
-		TransactionDate: _datetime,
+		TransactionDate: parsedTime,
 		CreatedAt:       now,
 		UpdatedAt:       now,
 	}
@@ -184,7 +188,7 @@ func CreateTransaction(c *gin.Context) {
 	}
 
 	// Success response
-	c.JSON(http.StatusCreated, CategoryDefaultResponse{
+	c.JSON(http.StatusCreated, TransactionDefaultResponse{
 		Error:   false,
 		Message: "Transaction creation successful",
 	})
