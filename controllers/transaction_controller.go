@@ -155,17 +155,13 @@ func CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	_layout := "2006-01-02 15:04:05"
-	location, err := time.LoadLocation("Asia/Jakarta")
+	layout := "2006-01-02 15:04:05"
+	jakartaOffset := 7 * 60 * 60 // 25200 seconds
+	location := time.FixedZone("WIB", jakartaOffset)
+	parsedTime, err := time.ParseInLocation(layout, req.TransactionDate, location)
 	if err != nil {
 		fmt.Println("Error loading location:", err)
 		return
-	}
-
-	parsedTime, err := time.ParseInLocation(_layout, req.TransactionDate, location)
-	if err != nil {
-		fmt.Println("Error loading location:", err)
-		parsedTime = time.Now()
 	}
 
 	fmt.Println("parsedTime: ", parsedTime)
