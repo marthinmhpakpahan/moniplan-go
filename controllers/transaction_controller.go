@@ -159,14 +159,18 @@ func CreateTransaction(c *gin.Context) {
 
 	now := time.Now()
 
-	// Buat user baru
+	_datetime, err := time.Parse(req.TransactionDate, req.TransactionDate)
+	if err != nil {
+		_datetime = now
+	}
+
 	newTransaction := models.Transaction{
 		UserID:          userID,
 		CategoryID:      req.CategoryID,
 		Amount:          req.Amount,
 		Type:            req.Type,
 		Remarks:         req.Remarks,
-		TransactionDate: now,
+		TransactionDate: _datetime,
 		CreatedAt:       now,
 		UpdatedAt:       now,
 	}
