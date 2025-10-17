@@ -63,17 +63,25 @@ func IndexTransaction(c *gin.Context) {
 	currentYear, currentMonth, _ := now.Date()
 	current_year := currentYear
 	current_month := int(currentMonth)
+	current_category_id := 0
 
 	param_month := c.DefaultQuery("month", strconv.Itoa(current_month))
 	param_year := c.DefaultQuery("year", strconv.Itoa(current_year))
+	param_category_id := c.DefaultQuery("category_id", strconv.Itoa(current_category_id))
 
 	// Fetch user data dari database
 	var transactions []models.TransactionCategoryBudget
-	err := database.DB.
+	query := database.DB.
 		Table("transactions t").
 		Select("t.id, t.user_id, t.category_id, t.amount, t.type, t.remarks, DATE_FORMAT(t.transaction_date, '%W, %d %M %Y %H:%i') AS transaction_date, t.created_at, t.updated_at, c.name as category_name").
 		Joins("JOIN categories c ON c.id = t.category_id").
-		Where("t.user_id = ? AND YEAR(t.transaction_date) = ? AND MONTH(t.transaction_date) = ?", userID, param_year, param_month).
+		Where("t.user_id = ? AND YEAR(t.transaction_date) = ? AND MONTH(t.transaction_date) = ?", userID, param_year, param_month)
+
+	if param_category_id != "0" {
+		query = query.Where("t.category_id = ?", param_category_id)
+	}
+
+	err := query.
 		Order("t.id DESC").
 		Scan(&transactions).Error
 
@@ -232,6 +240,15 @@ func UpdateTransaction(c *gin.Context) {
 
 	if req.CategoryID > 0 {
 		existingTransaction.CategoryID = req.CategoryID
+		result := database.DB.First(&existingTransaction, transactionID)
+
+		if result.Error != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Transaction not found!",
+				"message": err,
+			})
+			return
+		}
 	}
 
 	if req.Amount > 0 {
