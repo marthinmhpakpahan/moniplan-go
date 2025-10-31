@@ -19,6 +19,7 @@ type CategoryRequest struct {
 	Month      uint   `json:"month" binding:"required"`
 	Year       uint   `json:"year" binding:"required"`
 	Amount     uint   `json:"amount" binding:"required"`
+	Remarks    string `json:"remarks" binding:"max=100"`
 }
 
 type CategoryDefaultResponse struct {
@@ -133,6 +134,7 @@ func CreateCategory(c *gin.Context) {
 		newCategory := models.Category{
 			UserID:    userID,
 			Name:      req.Name,
+			Remarks:   req.Remarks,
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
@@ -273,6 +275,7 @@ func UpdateCategory(c *gin.Context) {
 		newCategory := models.Category{
 			UserID:    userID,
 			Name:      req.Name,
+			Remarks:   req.Remarks,
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
@@ -317,6 +320,16 @@ func DeleteCategoryByID(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "Unauthorized",
 			"message": "Invalid Category ID!",
+		})
+		return
+	}
+
+	if err := database.DB.
+		Where("category_id = ?", categoryID).
+		Delete(&models.Budget{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   true,
+			"message": "Failed to delete related budgets!",
 		})
 		return
 	}

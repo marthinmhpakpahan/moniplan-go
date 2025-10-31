@@ -10,6 +10,7 @@ type Category struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
 	UserID    uint      `json:"user_id" gorm:"not null"`
 	Name      string    `json:"name" gorm:"not null;size:100"`
+	Remarks   string    `json:"remarks" gorm:"size:100"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
