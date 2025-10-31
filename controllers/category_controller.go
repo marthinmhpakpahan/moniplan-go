@@ -321,6 +321,16 @@ func DeleteCategoryByID(c *gin.Context) {
 		return
 	}
 
+	if err := database.DB.
+		Where("category_id = ?", categoryID).
+		Delete(&models.Transaction{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   true,
+			"message": "Failed to delete related transactions!",
+		})
+		return
+	}
+
 	if err := database.DB.Delete(&models.Category{}, categoryID).Error; err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"error":   "Failed",
