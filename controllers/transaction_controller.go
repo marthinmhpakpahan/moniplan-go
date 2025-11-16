@@ -82,7 +82,7 @@ func IndexTransaction(c *gin.Context) {
 	}
 
 	err := query.
-		Order("t.id DESC").
+		Order("t.transaction_date DESC").
 		Scan(&transactions).Error
 
 	if err != nil {
