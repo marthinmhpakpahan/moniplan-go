@@ -240,15 +240,6 @@ func UpdateTransaction(c *gin.Context) {
 
 	if req.CategoryID > 0 {
 		existingTransaction.CategoryID = req.CategoryID
-		result := database.DB.First(&existingTransaction, transactionID)
-
-		if result.Error != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error":   "Transaction not found!",
-				"message": err,
-			})
-			return
-		}
 	}
 
 	if req.Amount > 0 {
